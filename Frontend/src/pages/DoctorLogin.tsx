@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,32 +7,54 @@ import { LogIn, Mail, Lock, UserCog } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-// giao diện đăng nhập dành cho bác sĩ trong hệ thống quản lý y tế.
+
+// Giao diện đăng nhập dành cho bác sĩ trong hệ thống quản lý y tế.
 const DoctorLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null); // Thêm state để quản lý lỗi
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setError(null); // Reset lỗi trước khi gửi yêu cầu
+
+    // Validation cơ bản
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Email không hợp lệ");
+      return;
+    }
+    if (password.trim() === "") {
+      setError("Mật khẩu không được để trống");
+      return;
+    }
+
     try {
       await login(email, password);
-      // Chuyển hướng đến trang dashboard sau khi đăng nhập
+      toast.success("Đăng nhập thành công"); // Thông báo thành công
       navigate("/doctor/dashboard");
-    } catch (error) {
-      // Lỗi đã được xử lý trong hook useAuth
-      console.error("Login failed:", error);
+    } catch (error: any) {
+      // Xử lý lỗi từ server
+      if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError("Đăng nhập thất bại, vui lòng thử lại.");
+      }
+      toast.error("Đăng nhập thất bại"); // Thông báo lỗi
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-hospital-50 to-white flex flex-col items-center justify-center p-4">
-      <Link to="/" className="absolute top-6 left-6 flex items-center text-gray-600 hover:text-hospital-600 transition-colors">
+      <Link
+        to="/"
+        className="absolute top-6 left-6 flex items-center text-gray-600 hover:text-hospital-600 transition-colors"
+      >
         <span className="font-medium">Trang chủ HealthCare</span>
       </Link>
-      
+
       <div className="max-w-md w-full">
         <div className="text-center mb-6">
           <div className="inline-flex flex-col items-center">
@@ -44,7 +65,7 @@ const DoctorLogin = () => {
             <p className="text-gray-500 mt-1">Hệ thống quản lý dành cho bác sĩ</p>
           </div>
         </div>
-        
+
         <Card className="w-full shadow-soft border-0">
           <form onSubmit={handleLogin}>
             <CardHeader>
@@ -54,36 +75,42 @@ const DoctorLogin = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Hiển thị thông báo lỗi nếu có */}
+              {error && <p className="text-red-500 text-sm">{error}</p>}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="doctor@healthcare.com" 
-                    className="pl-10" 
-                    required 
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="doctor@healthcare.com"
+                    className="pl-10"
+                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    autoFocus // Thêm autofocus
                   />
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Mật khẩu</Label>
-                  <Link to="/doctor/forgot-password" className="text-sm text-hospital-600 hover:underline">
+                  <Link
+                    to="/doctor/forgot-password"
+                    className="text-sm text-hospital-600 hover:underline"
+                  >
                     Quên mật khẩu?
                   </Link>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    placeholder="••••••••" 
-                    className="pl-10" 
-                    required 
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    className="pl-10"
+                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
@@ -91,12 +118,32 @@ const DoctorLogin = () => {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full bg-hospital-500 hover:bg-hospital-600" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full bg-hospital-500 hover:bg-hospital-600"
+                disabled={isLoading}
+              >
                 {isLoading ? (
                   <div className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Đang xử lý...
                   </div>
@@ -109,7 +156,10 @@ const DoctorLogin = () => {
               </Button>
               <div className="text-sm text-center text-gray-500">
                 <p>Nếu bạn gặp vấn đề khi đăng nhập, vui lòng liên hệ</p>
-                <a href="mailto:support@healthcare.com" className="text-hospital-600 hover:underline">
+                <a
+                  href="mailto:support@healthcare.com"
+                  className="text-hospital-600 hover:underline"
+                >
                   support@healthcare.com
                 </a>
               </div>
